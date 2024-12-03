@@ -17,7 +17,7 @@ function generateToken(user: User) {
 
 export function sendToken({ req, res, user, statusCode }: sendTokenParams) {
   const token = generateToken(user);
-  const payload = { id: user.id, email: user.email, name: user.name };
+  const me = { id: user.id, email: user.email, name: user.name };
   const options: CookieOptions = {
     expires: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
     httpOnly: true,
@@ -26,6 +26,6 @@ export function sendToken({ req, res, user, statusCode }: sendTokenParams) {
 
   res.cookie("authToken", token, options).status(statusCode).json({
     success: true,
-    payload,
+    me,
   });
 }

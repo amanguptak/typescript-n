@@ -66,7 +66,6 @@ export const Login = async (req: Request, res: Response): Promise<void> => {
     };
 
     sendToken(data);
-    
   } catch (err) {
     console.log(err);
   }
