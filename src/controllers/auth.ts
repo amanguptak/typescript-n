@@ -10,7 +10,7 @@ export const Register = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { name, email, password, phoneNumber } = req.body;
+  const { name, email, password, phone } = req.body;
   console.log(req.body, "data otuput");
 
   try {
@@ -20,25 +20,23 @@ export const Register = async (
       },
     });
     if (user) {
-    
       return next(
         new BAD_REQUEST("User Already Exists", ErrorCode.USER_ALREADY_EXISTS)
       );
-
     }
     user = await db.user.create({
       data: {
         name,
         email,
         password: hashSync(password, 10),
-        phoneNumber,
+        phone
       },
     });
+    const { password: passwordHash, role: userRole, ...newUser } = user;
 
-    const { password: _, ...newUser } = user;
     res
       .status(201)
-      .json({ message: "user registerd succesfully", user: newUser });
+      .json({ message: "User registered successfully", user: newUser });
     return;
   } catch (err) {
     next(err);
@@ -97,15 +95,17 @@ export const getUser = async (
       return next(new BAD_REQUEST("User Not Found", ErrorCode.USER_NOT_FOUND));
     }
 
-    const { name, email, phoneNumber, profilePicture } = user;
-    const userDetails = { name, email, phoneNumber, profilePicture };
+    const { name, email, phone } = user; // Register function
 
-    res.status(200).json({
+    const userDetails = { name, email, phone };
+
+    res.status(200).json(
       userDetails,
-    });
+    );
 
     return;
   } catch (err) {
-    next(err);
+    console.log(err);
+  next(err);
   }
 };
