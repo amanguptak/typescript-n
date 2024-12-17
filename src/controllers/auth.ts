@@ -4,16 +4,19 @@ import { compareSync, hashSync } from "bcrypt";
 import { sendToken } from "../utils/token";
 import { BAD_REQUEST } from "../utils/errorHandling/bad-request";
 import { ErrorCode } from "../utils/errorHandling/root";
+import { RegisterSchema } from "../utils/validation-schema/user";
+import { ValidationError } from "../utils/errorHandling/validation";
+import { ZodError } from "zod";
+import { NotFound } from "../utils/errorHandling/not-found";
 
 export const Register = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { name, email, password, phone } = req.body;
-  console.log(req.body, "data otuput");
-
   try {
+    RegisterSchema.parse(req.body);
+    const { name, email, password, phone } = req.body;
     let user = await db.user.findFirst({
       where: {
         email,
@@ -29,7 +32,7 @@ export const Register = async (
         name,
         email,
         password: hashSync(password, 10),
-        phone
+        phone,
       },
     });
     const { password: passwordHash, role: userRole, ...newUser } = user;
@@ -38,9 +41,18 @@ export const Register = async (
       .status(201)
       .json({ message: "User registered successfully", user: newUser });
     return;
-  } catch (err) {
+  } catch (err: any) {
+    if (err instanceof ZodError) {
+      return next(
+        new ValidationError(
+          err.errors, 
+          "Validation Error", 
+          ErrorCode.UNPROCESSABLE_ENTITY
+        )
+      );
+    }
     next(err);
-    return;
+    
   }
 };
 
@@ -59,11 +71,11 @@ export const Login = async (
     });
 
     if (!user) {
-      return next(new BAD_REQUEST("User Not Found", ErrorCode.USER_NOT_FOUND));
+      return next(new NotFound("User Not Found", ErrorCode.USER_NOT_FOUND));
     }
 
     if (!compareSync(password, user.password)) {
-      return next(new BAD_REQUEST("Wrong Credentials", ErrorCode.UNAUTHORIZED));
+      return next(new NotFound("Wrong Credentials", ErrorCode.UNAUTHORIZED));
     }
 
     const data = {
@@ -79,33 +91,48 @@ export const Login = async (
   }
 };
 
+
+export const Logout = async(req:Request,res:Response,next:NextFunction)=>{
+  try{
+    res.clearCookie("authToken", {
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      // sameSite: "strict", // Adjust based on your requirements
+      // path: "/", // Ensure the path matches where the cookie was set
+    });
+
+    res.status(200).json({ message: "Logged out successfully" });
+  }catch(err){
+    next(err)
+  }
+
+}
+
 export const getUser = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     const user = await db.user.findUnique({
       where: {
         id,
       },
     });
     if (!user) {
-      return next(new BAD_REQUEST("User Not Found", ErrorCode.USER_NOT_FOUND));
+      return next(new NotFound("User Not Found", ErrorCode.USER_NOT_FOUND));
     }
 
     const { name, email, phone } = user; // Register function
 
     const userDetails = { name, email, phone };
 
-    res.status(200).json(
-      userDetails,
-    );
+    res.status(200).json(userDetails);
 
     return;
   } catch (err) {
     console.log(err);
-  next(err);
+    next(err);
   }
 };

@@ -8,6 +8,6 @@
     "esModuleInterop": true,           // Allow imports from CommonJS modules
     // "skipLibCheck": true               // Skip type checking of declaration files
   },
-  "include": ["src/**/*.ts"],          // Include all `.ts` files in the `src` folder
+  "include": ["src/**/*.ts", "types/**/*.d.ts"], // Add the `types` folder
   "exclude": ["node_modules"]          // Exclude the `node_modules` folder from compilation
 }
