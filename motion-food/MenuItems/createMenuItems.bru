@@ -1,0 +1,27 @@
+meta {
+  name: createMenuItems
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3333/api/menu/add
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Spicy Paneer Tikka",
+    "description": "A delicious and spicy vegetarian paneer appetizer.",
+   
+    "image": "https://example.com/images/spicy-paneer-tikka.jpg",
+    "categoryId":"cm4semtdm0000rd08xtwqi4dh",
+    "isVegetarian": true,
+    "spicyLevel": 4,
+    "isTrending": true,
+    "status": "ACTIVE",
+    "dietaryType": "VEGETARIAN"
+  }
+  
+}

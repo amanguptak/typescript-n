@@ -11,13 +11,13 @@ interface sendTokenParams {
 }
 
 function generateToken(user: User) {
-  const payload = { id: user.id, email: user.email, name: user.name };
+  const payload = { id: user.id, email: user.email, name: user.name ,role:user.role };
   return jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
 }
 
 export function sendToken({ req, res, user, statusCode }: sendTokenParams) {
   const token = generateToken(user);
-  const me = { id: user.id, email: user.email, name: user.name };
+  const me = { id: user.id, email: user.email, name: user.name};
   const options: CookieOptions = {
     expires: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
     httpOnly: true,

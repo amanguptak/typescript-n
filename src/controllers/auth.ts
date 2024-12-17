@@ -84,7 +84,6 @@ export const Login = async (
       user,
       statusCode: 200,
     };
-
     sendToken(data);
   } catch (err) {
     console.log(err);

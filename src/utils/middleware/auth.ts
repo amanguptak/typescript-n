@@ -32,6 +32,7 @@ export const authenticatedUser = (
     // req: Represents the incoming request. It's part of the middleware chain, so any modifications (like adding req.user) are accessible to subsequent middlewares and handlers.
     // res: Represents the outgoing response. Attaching data to res does not propagate it forward through the request lifecycle.
     req.user = decoded;
+    console.log(req.user,"in mid")
     next();
   } catch (err) {
     next(
