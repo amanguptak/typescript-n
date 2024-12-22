@@ -62,7 +62,7 @@ enum AddressType {
 // Menu Management
 model MenuItem {
   id           String    @id @default(cuid())
-  name         String
+  name         String    @unique
   description  String
   price        Decimal   @db.Decimal(10, 2)
   image        String
