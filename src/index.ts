@@ -1,5 +1,5 @@
 import express, { Express, Request, Response } from "express";
-import { setupSwagger } from "./swagger";
+import { generateAndSetupSwagger } from "./swagger";
 import { PORT } from "./secrets";
 import rootRouter from "./routes";
 import { errorMiddleware } from "./utils/middleware/error";
@@ -19,7 +19,7 @@ app.use(errorMiddleware)
 
 const startServer = async () => {
     try {
-      await setupSwagger(app);
+      await generateAndSetupSwagger(app);
       console.log("Swagger setup completed");
   
       app.listen(PORT, () => {

@@ -5,7 +5,8 @@
     "rootDir": "./src",                // Specify the root folder of your TypeScript code
     "outDir": "./dist",                // Output compiled JavaScript to the `dist` folder
     "strict": true,                    // Enable all strict type checking options
-    "esModuleInterop": true,           // Allow imports from CommonJS modules
+    "esModuleInterop": true, 
+        // Allow imports from CommonJS modules
     // "skipLibCheck": true               // Skip type checking of declaration files
   },
   "include": ["src/**/*.ts", "types/**/*.d.ts"], // Add the `types` folder
