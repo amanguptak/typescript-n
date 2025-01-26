@@ -10,7 +10,7 @@ import { sanitizeEmptyBody } from "../utils/middleware/sanatizeEmptyBody";
 menuRoutes.post("/add",[authenticatedUser,adminVerify],createMenuItem)
 menuRoutes.patch("/update",[authenticatedUser,adminVerify],updateMenuItem)
 menuRoutes.delete("/delete/:id",[authenticatedUser,adminVerify],deleteMenuItem)
-menuRoutes.get("/items",[authenticatedUser,adminVerify],getMenuItems)
+menuRoutes.get("/items",[authenticatedUser],getMenuItems)
 
 export default menuRoutes;
 

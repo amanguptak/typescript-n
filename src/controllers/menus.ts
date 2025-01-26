@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Request, Response, NextFunction } from "express";
 import { MenuItemsSchema } from "../utils/validation-schema/menu-items";
 import { ZodError } from "zod";
@@ -6,6 +7,7 @@ import { ErrorCode } from "../utils/errorHandling/root";
 import db from "../utils/prisma";
 import { NotFound } from "../utils/errorHandling/not-found";
 import { UniqueConstraintError } from "../utils/errorHandling/unique-constraint-error";
+import { MenuItemsQuerySchema } from "../utils/validation-schema/menu-items-query-schema";
 
 export const createMenuItem = async (
   req: Request,
@@ -150,11 +152,51 @@ export const getMenuItems = async (req: Request,
   next: NextFunction) => {
 
     try{
+      const{page,limit,search} = MenuItemsQuerySchema.parse(req.query)
 
-      const menuItems = await db.menuItem.findMany()
-      res.status(200).json(menuItems)
+      const skip = (page-1)*limit
 
-    }catch(err){
+      const whereClause = search
+  ? {
+      name: {
+        contains: search,
+        mode: "insensitive" as Prisma.QueryMode, 
+      },
+    }
+  : {};
+
+      const [menuItems ,totalItems] =await Promise.all([
+        db.menuItem.findMany({
+          where: whereClause,
+          skip,
+          take:limit
+        }),
+        db.menuItem.count({
+          where: whereClause,
+        })
+      ])
+
+      const totalPages = Math.ceil(totalItems / limit);
+      res.status(200).json({
+        message: "MenuItems fetched successfully",
+        data: menuItems,
+        meta: {
+          totalItems,
+          totalPages,
+          currentPage: page,
+          itemsPerPage: limit,
+        },
+      });
+
+      
+
+    }catch(err:any){
+      if (err instanceof ZodError) {
+         res.status(400).json({
+          message: "Invalid query parameters",
+          details: err.errors,
+        });
+      }
       next(err)
     }
 
