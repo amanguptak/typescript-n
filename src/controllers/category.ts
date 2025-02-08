@@ -6,6 +6,7 @@ import { ValidationError } from '../utils/errorHandling/validation';
 import { ErrorCode } from '../utils/errorHandling/root';
 import { ZodError } from 'zod';
 import { UniqueConstraintError } from '../utils/errorHandling/unique-constraint-error';
+import { NotFound } from '../utils/errorHandling/not-found';
 
 
 export const createCategory = async (
@@ -57,3 +58,75 @@ export const createCategory = async (
     }
   };
   
+
+  export const updateCategory = async(req:Request,res:Response,next:NextFunction)=>{
+    try{
+
+      const {id , ...data} = req.body
+    
+      if (!id) {
+        res.status(400).json({ message: "Category Id is required" });
+        return;
+      }
+      const validatedData = CategorySchema.partial().parse(data)
+  
+      const categoryExits = db.category.findUnique({
+        where:{id}
+      })
+  
+      if(!categoryExits){
+        next(new NotFound("Category Not Found", ErrorCode.MENUITEM_NOT_FOUND));
+        return;
+      }
+  
+      const updatedCategory = await db.category.update({
+        where: {id},
+        data: validatedData
+      })
+  
+      res.status(200).json({
+          message:"Category Updated Successfully.",
+          data:updatedCategory
+  
+      })
+    }catch(err){
+      if (err instanceof ZodError) {
+        return next(
+          new ValidationError(
+            err.errors,
+            "Validation Error",
+            ErrorCode.UNPROCESSABLE_ENTITY
+          )
+        );
+      }
+      next(err);
+    }
+  }
+
+  export const getMenuByCategory = async(req:Request,res:Response,next:NextFunction)=>{
+    try{
+
+     const categories = await db.category.findMany({
+      include:{
+        items:{
+          where:{status:"ACTIVE"},
+          select:{
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            image: true,
+            isVegetarian: true,
+            spicyLevel: true,
+            isTrending: true
+          }
+        }
+      }
+     })
+
+     res.status(201).json(categories)
+
+    }catch(err){
+      next(err)
+    }
+  }
