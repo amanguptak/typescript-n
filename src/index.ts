@@ -13,9 +13,6 @@ app.use(cookieParser())
 app.use("/api", rootRouter);
 app.use(errorMiddleware)
 
-// app.listen(PORT, () => {
-//   console.log(`app is listening port ${PORT}`);
-// });
 
 const startServer = async () => {
     try {

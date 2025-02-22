@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { Request, Response, NextFunction } from "express";
 import db from '../utils/prisma';
-import { CategorySchema } from '../utils/validation-schema/category';
+import { categoryIdSchema, CategorySchema } from '../utils/validation-schema/category';
 import { ValidationError } from '../utils/errorHandling/validation';
 import { ErrorCode } from '../utils/errorHandling/root';
 import { ZodError } from 'zod';
@@ -106,7 +106,7 @@ export const createCategory = async (
   export const getMenuByCategory = async(req:Request,res:Response,next:NextFunction)=>{
     try{
 
-     const categories = await db.category.findMany({
+     const menuByCategory = await db.category.findMany({
       include:{
         items:{
           where:{status:"ACTIVE"},
@@ -124,9 +124,61 @@ export const createCategory = async (
       }
      })
 
-     res.status(201).json(categories)
+     res.status(201).json(menuByCategory)
 
     }catch(err){
       next(err)
     }
+  }
+
+
+  export const getCategories = async(req:Request,res:Response,next:NextFunction)=>{
+
+     try{
+      const categories = await db.category.findMany()
+      res.status(200).json(categories)
+     }catch(err){
+      next(err)
+     }
+
+  }
+
+  export const deleteCategory = async(req:Request,res:Response,next:NextFunction)=>{
+
+     try{
+       const { id } = categoryIdSchema.parse(req.params);
+
+     if(!id){
+      res.status(400).json({message:"Please Provide Category Id"})
+      return
+     }
+
+     const  findCategory = await db.category.findUnique({
+      where:{
+        id: id
+      }
+     })
+     if(!findCategory){
+      next(new NotFound("Category Not Found", ErrorCode.CATEGORY_NOT_FOUND));
+      return;
+     }
+
+     const deletedCategory = await db.category.delete({
+      where:{
+        id
+      }
+     })
+      res.status(200).json({message:`${deletedCategory} Deleted SuccessFully`})
+     }catch(err){
+      if (err instanceof ZodError) {
+        return next(
+          new ValidationError(
+            err.errors,
+            "Validation Error",
+            ErrorCode.UNPROCESSABLE_ENTITY
+          )
+        );
+      }
+      next(err)
+     }
   }
