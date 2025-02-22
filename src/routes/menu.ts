@@ -2,7 +2,7 @@ import { Router } from "express";
 
 const menuRoutes:Router = Router()
 import { authenticatedUser } from "../utils/middleware/auth";
-import { createMenuItem, deleteMenuItem, getMenuItems, updateMenuItem } from "../controllers/menus";
+import { createMenuItem, deleteMenuItem, getMenuItems, typeHeadMenuItems, updateMenuItem } from "../controllers/menus";
 import { adminVerify } from "../utils/middleware/admin";
 import { sanitizeEmptyBody } from "../utils/middleware/sanatizeEmptyBody";
 
@@ -11,6 +11,7 @@ menuRoutes.post("/add",[authenticatedUser,adminVerify],createMenuItem)
 menuRoutes.patch("/update",[authenticatedUser,adminVerify],updateMenuItem)
 menuRoutes.delete("/delete/:id",[authenticatedUser,adminVerify],deleteMenuItem)
 menuRoutes.get("/items",[authenticatedUser],getMenuItems)
+menuRoutes.get("/search",typeHeadMenuItems)
 
 export default menuRoutes;
 

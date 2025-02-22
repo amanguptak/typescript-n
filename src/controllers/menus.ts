@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 import { Request, Response, NextFunction } from "express";
 import { MenuItemsSchema } from "../utils/validation-schema/menu-items";
 import { ZodError } from "zod";
@@ -15,21 +15,21 @@ export const createMenuItem = async (
   next: NextFunction
 ) => {
   try {
-       // Parse and validate input using Zod
-       const validatedData = MenuItemsSchema.parse(req.body);
+    // Parse and validate input using Zod
+    const validatedData = MenuItemsSchema.parse(req.body);
 
-       // Check if the categoryId exists in the Category table
-       const categoryExists = await db.category.findUnique({
-         where: { id: validatedData.categoryId },
-       });
-   
-       if (!categoryExists) {
-         res.status(400).json({
-           message: "Invalid categoryId. The specified category does not exist.",
-           errorCode: "INVALID_CATEGORY_ID",
-         });
-         return
-       }
+    // Check if the categoryId exists in the Category table
+    const categoryExists = await db.category.findUnique({
+      where: { id: validatedData.categoryId },
+    });
+
+    if (!categoryExists) {
+      res.status(400).json({
+        message: "Invalid categoryId. The specified category does not exist.",
+        errorCode: "INVALID_CATEGORY_ID",
+      });
+      return;
+    }
 
     const menuItem = await db.menuItem.create({
       data: validatedData,
@@ -37,11 +37,10 @@ export const createMenuItem = async (
 
     res.status(201).json({ message: "MenuItem Added Successfully", menuItem });
   } catch (err: any) {
-
-//     Prisma errors can occur for many reasons:
-// P2002: Unique constraint violations.
-// P2003: Foreign key constraint violations.
-// P2000: Value too large for column.
+    //     Prisma errors can occur for many reasons:
+    // P2002: Unique constraint violations.
+    // P2003: Foreign key constraint violations.
+    // P2000: Value too large for column.
     if (err instanceof ZodError) {
       return next(
         new ValidationError(
@@ -73,7 +72,7 @@ export const updateMenuItem = async (
       res.status(400).json({ message: "MenuItem Id is required" });
       return;
     }
-    MenuItemsSchema.partial().parse(data);
+    const validatedData = MenuItemsSchema.partial().parse(data);
     if (Object.keys(data).length === 0) {
       res.status(400).json({ message: "No field to update" });
       return;
@@ -87,19 +86,17 @@ export const updateMenuItem = async (
 
     const updatedMenuItem = await db.menuItem.update({
       where: { id },
-      data,
+      data: validatedData,
     });
 
     if (!updatedMenuItem) {
       next(new NotFound("MenuItem Not Found", ErrorCode.MENUITEM_NOT_FOUND));
       return;
     }
-    res
-      .status(200)
-      .json({
-        message: "MenuItem Updated Successfully",
-        data: updatedMenuItem,
-      });
+    res.status(200).json({
+      message: "MenuItem Updated Successfully",
+      data: updatedMenuItem,
+    });
   } catch (err: any) {
     if (err instanceof ZodError) {
       return next(
@@ -114,91 +111,129 @@ export const updateMenuItem = async (
   }
 };
 
-export const deleteMenuItem = async ( req: Request,
+export const deleteMenuItem = async (
+  req: Request,
   res: Response,
-  next: NextFunction) => {
-
-    try{
-      const {id}= req.params
-      if(!id){
-        res.status(400).json({ message: "MenuItem Id is required" });
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ message: "MenuItem Id is required" });
       return;
-      }
-
-      const menuItem = await db.menuItem.findUnique({ where: { id } });
-
-      if (!menuItem) {
-        next(new NotFound("MenuItem Not Found", ErrorCode.MENUITEM_NOT_FOUND));
-        return;
-      }
-
-      const deletedMenuItem = await db.menuItem.delete({
-        where:{id}
-      })
-      res.status(200).json({message:`${deletedMenuItem.name} MenuItem deleted Successfully`})
-      return
-    }catch(err:any){
-      // if (err.message === "Unexpected end of JSON input") {
-      //   res.status(400).json({ message: "Invalid JSON in request body" });
-      //   return;
-      // }
-      next(err)
     }
 
+    const menuItem = await db.menuItem.findUnique({ where: { id } });
+
+    if (!menuItem) {
+      next(new NotFound("MenuItem Not Found", ErrorCode.MENUITEM_NOT_FOUND));
+      return;
+    }
+
+    const deletedMenuItem = await db.menuItem.delete({
+      where: { id },
+    });
+    res
+      .status(200)
+      .json({
+        message: `${deletedMenuItem.name} MenuItem deleted Successfully`,
+      });
+    return;
+  } catch (err: any) {
+    // if (err.message === "Unexpected end of JSON input") {
+    //   res.status(400).json({ message: "Invalid JSON in request body" });
+    //   return;
+    // }
+    next(err);
+  }
 };
 
-export const getMenuItems = async (req: Request,
+export const getMenuItems = async (
+  req: Request,
   res: Response,
-  next: NextFunction) => {
+  next: NextFunction
+) => {
+  try {
+    const { page, limit, search } = MenuItemsQuerySchema.parse(req.query);
 
-    try{
-      const{page,limit,search} = MenuItemsQuerySchema.parse(req.query)
+    const skip = (page - 1) * limit;
 
-      const skip = (page-1)*limit
+    const whereClause = search
+      ? {
+          name: {
+            contains: search,
+            mode: "insensitive" as Prisma.QueryMode,
+          },
+        }
+      : {};
 
-      const whereClause = search
-  ? {
-      name: {
-        contains: search,
-        mode: "insensitive" as Prisma.QueryMode, 
+    const [menuItems, totalItems] = await Promise.all([
+      db.menuItem.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+      }),
+      db.menuItem.count({
+        where: whereClause,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    res.status(200).json({
+      message: "MenuItems fetched successfully",
+      data: menuItems,
+      meta: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
       },
-    }
-  : {};
-
-      const [menuItems ,totalItems] =await Promise.all([
-        db.menuItem.findMany({
-          where: whereClause,
-          skip,
-          take:limit
-        }),
-        db.menuItem.count({
-          where: whereClause,
-        })
-      ])
-
-      const totalPages = Math.ceil(totalItems / limit);
-      res.status(200).json({
-        message: "MenuItems fetched successfully",
-        data: menuItems,
-        meta: {
-          totalItems,
-          totalPages,
-          currentPage: page,
-          itemsPerPage: limit,
-        },
+    });
+  } catch (err: any) {
+    if (err instanceof ZodError) {
+      res.status(400).json({
+        message: "Invalid query parameters",
+        details: err.errors,
       });
+    }
+    next(err);
+  }
+};
 
-      
+export const typeHeadMenuItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { query } = req.query;
+    if (!query || typeof query !== "string") {
+       res
+        .status(400)
+        .json({ message: "Query parameter is required and must be a string" });
 
-    }catch(err:any){
-      if (err instanceof ZodError) {
-         res.status(400).json({
-          message: "Invalid query parameters",
-          details: err.errors,
-        });
-      }
-      next(err)
+        return
     }
 
-
+    const menuItems = await db.menuItem.findMany({
+      where: {
+        name: {
+          contains: query,
+          mode: "insensitive" as Prisma.QueryMode, // Case-insensitive search
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+      },
+      take: 10,
+    });
+    res.status(200).json({
+      message: "Typeahead search results fetched successfully",
+      data: menuItems,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
